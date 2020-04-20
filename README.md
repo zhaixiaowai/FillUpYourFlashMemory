@@ -16,6 +16,6 @@ Fill Up Your Flash Memory是一个基于Xamarin.Android开发的Hybrid App，运
 4. 重复1-3步骤1-2次
 
 # 使用截图  
-<img width="540" height="960" src="/Screenshots/1.png" alt="权限获取" />
-<img width="540" height="960" src="/Screenshots/2.png" alt="主界面" />
-<img width="540" height="960" src="/Screenshots/3.png" alt="运行中" />
+<img width="360" height="640" src="/Screenshots/1.png" alt="权限获取" />
+<img width="360" height="640" src="/Screenshots/2.png" alt="主界面" />
+<img width="360" height="640" src="/Screenshots/3.png" alt="运行中" />
