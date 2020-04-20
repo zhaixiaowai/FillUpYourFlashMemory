@@ -4,6 +4,7 @@ Fill up your flash memory is a hybrid app based on Xamarin.Android. Running it u
 * Supports two modes: random byte write and fill 0
 * Data display supports 1KB = 2014b and 1KB = 1000B
 * Real time display of write information and remaining flash memory information
+* Minimum Android version support: Android 6
 
 # README.md
 * zh_CN [简体中文](/README.md)
