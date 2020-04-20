@@ -2,7 +2,7 @@
 Fill up your flash memory is a hybrid app based on Xamarin.Android. Running it until the end will fill your internal storage with random files.
 * Each file size is 800kb-1mb
 * Supports two modes: random byte write and fill 0
-* Data display supports 1KB = 1024b and 1KB = 1000B
+* Data display supports 1KB = 1024B and 1KB = 1000B
 * Real time display of write information and remaining flash memory information
 * Minimum Android version support: Android 6
 
