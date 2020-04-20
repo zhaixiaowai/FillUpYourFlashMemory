@@ -1,0 +1,346 @@
+﻿<!--
+The MIT License (MIT)
+
+Copyright (c) 2020 ZhaiXiaoWai(https://www.zhaixiaowai.com)
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+-->
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>爆满吧,你的闪存!(Fill Up Your Flash Memory)</title>
+    <!-- <script src="http://192.168.72.75:13080/res/mobile-debug-publish-client.js" id="__jscompress_mobile_debug_hack_js"></script> -->
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+        }
+
+        html, body {
+            height: 100%;
+            overflow: hidden;
+        }
+
+        #main {
+            height: 100%;
+            overflow: hidden;
+            overflow-y: auto;
+        }
+
+        .btns {
+            text-align: center;
+            margin-top: 5vw;
+            margin-bottom: 5vw;
+        }
+
+        .btn.plan {
+            display: inline-block;
+            padding: 5vw 10vw;
+            background: #111;
+            color: #fff;
+            border-radius: 2vw;
+            text-decoration: none;
+            font-size: 5vw;
+        }
+
+            .btn.plan:before {
+                content: "开始/Begin";
+            }
+
+            .btn.plan.playing {
+                background-color: brown
+            }
+
+                .btn.plan.playing:before {
+                    content: "停止/Stop";
+                }
+
+        .settings.off {
+            pointer-events: none;
+            opacity: 0.7;
+        }
+
+        #log {
+            height: 30vh;
+            overflow: hidden;
+            overflow-y: auto;
+            background: #ffffee;
+        }
+
+            #log > p {
+                word-break: break-all;
+                font-size: 12px;
+            }
+
+        #main dl > dd {
+            padding: 1vw;
+        }
+
+            #main dl > dd label {
+                margin-right: 3vw;
+            }
+
+        #main dl > dt {
+            margin-top: 1vw;
+            font-weight: bold;
+        }
+
+        #total {
+            font-size: 12px;
+            padding: 1vh;
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            pointer-events: none;
+            color: darkred;
+            opacity: 0.7;
+            white-space: pre;
+        }
+    </style>
+</head>
+<body>
+    <div id="main">
+        <dl id="totalMemory">
+            <dt>可用空间统计/Memory</dt>
+            <dd></dd>
+        </dl>
+        <dl>
+            <dt>数据展示/Display</dt>
+            <dd><label><input checked type="radio" name="bytedisplay" id="display1024" />1KB=1024B</label><label><input type="radio" name="bytedisplay" id="display1000" />1KB=1000B</label></dd>
+        </dl>
+        <div class="settings" id="settings">
+            <dl>
+                <dt>写入模式/Write Mode</dt>
+                <dd><label><input checked type="radio" name="writebyte" id="writeRnd" />随机写入/Rnd Write</label><label><input type="radio" name="writebyte" id="writeZero" />填充0/Fill 0</label></dd>
+            </dl>
+        </div>
+        <dl>
+            <dt>Log</dt>
+            <dd id="log"></dd>
+        </dl>
+        <div class="btns">
+            <a href="javascript:;" id="btnPlan" class="btn plan"></a>
+        </div>
+        <div id="total"></div>
+    </div>
+    <script>
+        const onNativeCall = (function () {
+            const isObject = function (item) {
+                return Object.prototype.toString.call(item) === "[object Object]"
+            };
+            const callNative = function(command,data){
+                if(typeof command!=="string")command = JSON.stringify(command);
+                if(data!=null && typeof data!=="string")data = JSON.stringify(data);
+                else{
+                    data=null;
+                }
+                const result = prompt(command,data);
+                if(result){
+                    try {
+                       return JSON.parse(result);
+                    } catch (error) {
+                        return result;
+                    }
+                }
+                return null;
+            };
+            const native = {
+                /**
+                 * 设置存储单位换算基数
+                 * @param {boolean} display1024 以1024换算,false则以1000换算
+                 */
+				setDisplay(display1024) {
+                    return callNative("setDisplay",display1024?1:0);
+				},
+                /**
+                 * 获取内存统计信息
+                 *@returns {{TotalBytes:0,FreeBytes:0,TotalBytesStr:"0MB",FreeBytesStr:"0MB"}}
+                 */
+                getMemory(){
+                    return callNative("getMemory");
+                },
+                /**
+                * 开始处理
+                @param {boolean} rndZero 填充0,false为随机填充
+                */
+                start(rndZero){
+                    return callNative("start",rndZero?1:0);
+                },
+                /**
+                 * 停止处理
+                */
+                stop(){
+                    return callNative("stop");
+                }
+            };
+            let playing=false;
+            const render = {
+                memoryContainer:null,
+                /**
+                 * @type {HTMLElement}
+                */
+                logContainer:null,
+                totalContainer:null,
+                /*获取状态*/
+                get playing(){
+                    return playing
+                },
+                /*设置状态*/
+                set playing(value){
+                    if(value===playing)return;
+                    playing=value;
+                    let settings=document.querySelector("#settings");
+                    let btnPlan = document.querySelector("#btnPlan");
+                    let clsFun;
+                    if(playing){
+                        clsFun = "add";
+                    }else{
+                        clsFun = "remove";
+                    }
+                    settings.classList[clsFun]("off");
+                    btnPlan.classList[clsFun]("playing");
+                },
+                /*渲染内存信息*/
+                totalMemory(totalMemory){
+                    if(!this.memoryContainer)return;
+                    if(!totalMemory)totalMemory = native.getMemory();
+                    let html;
+                    if(!totalMemory){
+                        html = "获取失败/get failed";
+                    }else{
+                        html = `Free:${totalMemory.FreeBytesStr}/Total:${totalMemory.TotalBytesStr}`;
+                    }
+                    requestAnimationFrame(()=>{
+                        this.memoryContainer.innerText = html
+                    });
+                },
+                appendLog(text){
+                    const logContainer=this.logContainer;
+                    if(!logContainer)return;
+                    let dom = document.createElement("p");
+                    dom.innerText = text;
+                    let firstChild = logContainer.firstChild;
+                    if(firstChild){
+                        logContainer.insertBefore(dom,firstChild);
+                    }else{
+                        logContainer.appendChild(dom);
+                    }
+                    const count =logContainer.childElementCount;
+                    if(count>=10){
+                        let lastChild = logContainer.lastElementChild;
+                        logContainer.removeChild(lastChild);
+                        lastChild=null;
+                    }
+                },
+                /**
+                 * @param {{BytesStr:"0MB",Count:1,UseTimeStr:"",AverageBytesStr:"0MB",SurplusTimesStr:""}} data
+                */
+                total(data){
+                    if (!this.totalContainer) return;
+                    if (!isObject(data)) return;
+                    const surplusTimesStr = data.SurplusTimesStr !== "" ? `剩余(surplus):${data.SurplusTimesStr}    ` : "";
+                    const text = `${surplusTimesStr}速度(speed):${data.AverageBytesStr}\n耗时(times):${data.UseTimeStr}  文件(files):${data.Count}  字节(bytes):${data.BytesStr}`;
+                    requestAnimationFrame(()=>{
+                        this.totalContainer.innerText = text;
+                    });
+                },
+                /*
+                初始化渲染
+                */
+                init(){
+                    this.memoryContainer = document.querySelector("#totalMemory>dd");
+                    this.logContainer =  document.querySelector("#log");
+                    this.totalContainer=  document.querySelector("#total");
+                    this.totalMemory();
+                    //注册点击事件
+                    let btnPlan = document.querySelector("#btnPlan");
+                    btnPlan && btnPlan.addEventListener("click",()=>{
+                        const playing = this.playing;
+                        if(playing){
+                            native.stop();
+                        }else{
+                            const writeZero = document.querySelector("#writeZero");
+                            const rndZero = !writeZero || writeZero.checked;
+                            native.start(rndZero);
+                        }
+                        this.playing=!playing;
+					});
+					let display1024 = document.querySelector("#display1024");
+                    display1024 && display1024.addEventListener("click",()=>{
+						native.setDisplay(true);
+						requestAnimationFrame(() => {
+                            this.totalMemory();
+						});
+					});
+                    let display1000 = document.querySelector("#display1000");
+                    display1000 && display1000.addEventListener("click",()=>{
+						native.setDisplay(false);
+                        requestAnimationFrame(() => {
+                            this.totalMemory();
+						});
+					});
+                }
+            };
+
+            const jsfun = {
+                /**设置状态*/
+                setPlayState(data){
+                    render.playing = !!data;
+                },
+                /**渲染最新内存信息*/
+                renderMemory(data){
+                    render.totalMemory(data);
+                },
+                textTip(text){
+                    if(typeof text!=="string"||text.length===0)return;
+                    requestAnimationFrame(()=>{
+                        render.appendLog(text);
+                    });
+                },
+                /**
+                 * 渲染统计
+                */
+                renderTotal(data){
+                    render.total(data);
+                }
+            };
+            //init
+            render.init();
+
+            window.native =native;
+            window.render=render;
+            return /*注册给native层调用的方法*/function onNativeCall(args){
+                if (!isObject(args))return;
+                let data=args.Data;
+                if(typeof data==="string" && data.length>0){
+                    try {
+                        data = JSON.parse(data);
+                    } catch (error) {
+                    }
+                }
+                let fun = jsfun[args.Command];
+                if(!fun)return;
+                return fun.call(jsfun,data);
+            }
+        })();
+    </script>
+</body>
+</html>
