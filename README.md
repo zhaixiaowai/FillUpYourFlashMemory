@@ -15,7 +15,7 @@ Fill Up Your Flash Memory是一个基于Xamarin.Android开发的Hybrid App，运
 3. 选择写入模式并点击开始/Begin 按钮直到闪存被写满
 4. 重复1-3步骤1-2次
 
-#使用截图  
-![权限获取](/Screenshots/1.png)  
-![主界面](/Screenshots/2.png)  
-![运行中](/Screenshots/3.png)  
+# 使用截图  
+<img width="540" height="960" src="/Screenshots/1.png" alt="权限获取" />
+<img width="540" height="960" src="/Screenshots/2.png" alt="主界面" />
+<img width="540" height="960" src="/Screenshots/3.png" alt="运行中" />
