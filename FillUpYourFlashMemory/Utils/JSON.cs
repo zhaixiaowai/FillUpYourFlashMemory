@@ -56,7 +56,7 @@ namespace FillUpYourFlashMemory.Utils
 		{
 			try
 			{
-				return (T)JsonConvert.DeserializeObject(jsonStr);
+				return JsonConvert.DeserializeObject<T>(jsonStr);
 			}
 			catch 
 			{
